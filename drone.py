@@ -20,15 +20,7 @@ class Drone():
     
     def connect(self):
         print 'Connecting to vehicle on: %s' % self.address
-        # if not self.address:
-        #     import dronekit_sitl
-        #     sitl = dronekit_sitl.start_default(start_lat, start_lon)
-        #     self.address = sitl.connection_string()
-        #     self.vehicle = connect(self.address, wait_ready=True)
-        # else:
-        #     self.vehicle = connect(self.address, wait_ready=True, baud=57600)
         self.vehicle = connect(self.address, wait_ready=True, baud=57600)
-        # self.cmds = self.vehicle.commands
 
     def clear_mission(self):
         self.cmds.clear()
@@ -42,26 +34,22 @@ class Drone():
         self.vehicle.mode = VehicleMode("AUTO")
 
     def prepare_mission(self):
-        # Mission start
-        # self.cmds.add(dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_MISSION_START, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-        # Arm
-        # self.cmds.add(dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 0, 0, 1, 0, 0, 0, 0, 0, 0))
         # Takeoff
-        self.cmds.add(dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, self.cruise_altitude))
+        self.cmds.add(command_takeoff(self.cruise_altitude))
         # Go to destination
-        self.cmds.add(dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, self.target[0], self.target[1], self.cruise_altitude))
+        self.cmds.add(command_waypoint(self.target[0], self.target[1], self.cruise_altitude))
         # Land
-        self.cmds.add(dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0, 0, 0, 0, 0, 0, self.cruise_altitude))
+        self.cmds.add(command_land())
         # Release package
-        # self.cmds.add(dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 0, 0, 0, 0, 0, 0, 0, self.cruise_altitude))
+        # self.cmds.add(command_unlock())
         # Takeoff
-        self.cmds.add(dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, self.cruise_altitude))
+        self.cmds.add(command_takeoff(self.cruise_altitude))
         # Undo release
-        # self.cmds.add(dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 0, 0, 0, 0, 0, 0, 0, self.cruise_altitude))
+        # self.cmds.add(command_lock())
         # RTL
-        self.cmds.add(dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0, 0, 0, 0, 0, 0, self.cruise_altitude))
+        self.cmds.add(command_rtl(self.cruise_altitude))
         # Dummy
-        # self.cmds.add(dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_MISSION_START, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+        # self.cmds.add(command_dummy())
 
     def upload_mission(self):
         self.cmds.upload()
@@ -117,3 +105,24 @@ class Drone():
 
     def simple_goto(self, waypoint):
         self.vehicle.simple_goto(waypoint)
+
+def command_takeoff(alt):
+    return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, alt)
+
+def command_waypoint(lat, lon, alt):
+    return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, lat, lon, alt)
+
+def command_land():
+    return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+def command_rtl(alt):
+    return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0, 0, 0, 0, 0, 0, alt)
+
+def command_lock():
+    return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 0, 0, 0, 0, 0, 0, 0, self.cruise_altitude)
+
+def command_unlock():
+    return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 0, 0, 0, 0, 0, 0, 0, self.cruise_altitude)
+
+def command_dummy():
+    return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_MISSION_START, 0, 0, 0, 0, 0, 0, 0, 0, 0)
