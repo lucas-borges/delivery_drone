@@ -52,21 +52,30 @@ else:
 
 
 test = Drone(connection_string, (waypoint_location.lat, waypoint_location.lon))
-print "Clearing mission"
-test.clear_mission()
-test.download_mission()
-print "Preparing mission"
-test.prepare_mission()
-print "Uploading mission"
-test.upload_mission()
-print "oops"
-raw_input("Press enter to begin arming and taking off")
-test.arm()
-test.takeoff()
-test.begin_mission()
+# print "Clearing mission"
+# test.clear_mission()
+# test.download_mission()
+# print "Preparing mission"
+# test.prepare_mission()
+# print "Uploading mission"
+# test.upload_mission()
+# print "oops"
+# raw_input("Press enter to begin arming and taking off")
+# test.arm()
+# test.takeoff()
+
+
+# test.begin_mission()
+
+
 # test.simple_goto(waypoint_location)
 # time.sleep(60)
+
+test.run()
+
 while True:
     print "Current Waypoint: %s" % test.vehicle.commands.next
+    print "command: %s" % test.vehicle.commands[test.vehicle.commands.next].command
+    print "Number of Waypoints: %s" % test.vehicle.commands.count
     print test.distance_to_current_waypoint()
     time.sleep(1)

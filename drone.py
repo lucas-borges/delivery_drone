@@ -34,7 +34,7 @@ class Drone():
         self.vehicle.mode = VehicleMode("AUTO")
 
     def prepare_mission(self):
-        # Takeoff
+        # Takeoff (dummy for now, one because first isnt added)
         self.cmds.add(command_takeoff(self.cruise_altitude))
         # Go to destination
         self.cmds.add(command_waypoint(self.target[0], self.target[1], self.cruise_altitude))
@@ -46,10 +46,10 @@ class Drone():
         self.cmds.add(command_takeoff(self.cruise_altitude))
         # Undo release
         # self.cmds.add(command_lock())
-        # RTL
+        # MAV_CMD_NAV_RETURN_TO_LAUNCH
         self.cmds.add(command_rtl(self.cruise_altitude))
         # Dummy
-        # self.cmds.add(command_dummy())
+        self.cmds.add(command_dummy())
 
     def upload_mission(self):
         self.cmds.upload()
@@ -106,6 +106,19 @@ class Drone():
     def simple_goto(self, waypoint):
         self.vehicle.simple_goto(waypoint)
 
+    def run(self):
+        print "Clearing mission"
+        self.clear_mission()
+        print "Preparing mission"
+        self.prepare_mission()
+        print "Uploading mission"
+        self.upload_mission()
+        time.sleep(2)
+        raw_input("Press enter to begin arming and taking off")
+        self.arm()
+        self.takeoff()
+        self.begin_mission()
+
 def command_takeoff(alt):
     return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, alt)
 
@@ -125,4 +138,4 @@ def command_unlock():
     return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 0, 0, 0, 0, 0, 0, 0, self.cruise_altitude)
 
 def command_dummy():
-    return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_MISSION_START, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0, 0, 0, 0, 0, 0, 0)
