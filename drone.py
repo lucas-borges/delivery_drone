@@ -10,9 +10,11 @@ class Drone():
     address = None
     vehicle = None
     cmds = None
-    target = None
-    def __init__(self, address, target, altitude=10):
-        self.target = target
+    lat = None
+    lon = None
+    def __init__(self, address, latitude, longitude, altitude=10):
+        self.lat = latitude
+        self.lon = longitude
         self.cruise_altitude = altitude
         self.address = address
         self.connect()
@@ -37,7 +39,7 @@ class Drone():
         # Takeoff (dummy for now, one because first isnt added)
         self.cmds.add(command_takeoff(self.cruise_altitude))
         # Go to destination
-        self.cmds.add(command_waypoint(self.target[0], self.target[1], self.cruise_altitude))
+        self.cmds.add(command_waypoint(self.lat, self.lon, self.cruise_altitude))
         # Land
         self.cmds.add(command_land())
         # Release package
@@ -118,6 +120,12 @@ class Drone():
         self.arm()
         self.takeoff()
         self.begin_mission()
+
+    def wait(self):
+        while self.cmds.next != self.cmds.count:
+            time.sleep(0.5)
+
+        print "*******ended"
 
 def command_takeoff(alt):
     return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, alt)
