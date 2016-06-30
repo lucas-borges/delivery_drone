@@ -12,6 +12,7 @@ class Drone():
     cmds = None
     lat = None
     lon = None
+
     def __init__(self, address, latitude, longitude, altitude=10):
         self.lat = latitude
         self.lon = longitude
@@ -19,6 +20,8 @@ class Drone():
         self.address = address
         self.connect()
         self.cmds = self.vehicle.commands
+
+        self.vehicle.add_attribute_listener('location', self.location_callback)
     
     def connect(self):
         print 'Connecting to vehicle on: %s' % self.address
@@ -126,6 +129,15 @@ class Drone():
             time.sleep(0.5)
 
         print "*******ended"
+
+    def get_location(self):
+        return [self.current_location.lat, self.current_location.lon]
+
+    def location_callback(self, vehicle, name, location):
+        if location.global_relative_frame.alt is not None:
+            self.altitude = location.global_relative_frame.alt
+
+        self.current_location = location.global_relative_frame
 
 def command_takeoff(alt):
     return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, alt)
