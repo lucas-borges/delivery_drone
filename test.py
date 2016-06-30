@@ -51,7 +51,7 @@ else:
     waypoint_location = LocationGlobalRelative(41.837283, -87.624709, 10) #real field
 
 
-test = Drone(connection_string, (waypoint_location.lat, waypoint_location.lon))
+test = Drone(connection_string, waypoint_location.lat, waypoint_location.lon)
 # print "Clearing mission"
 # test.clear_mission()
 # test.download_mission()
