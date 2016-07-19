@@ -21,11 +21,15 @@ class Drone():
         self.connect()
         self.cmds = self.vehicle.commands
 
+        self.mission_ended_aux = False
+
         self.vehicle.add_attribute_listener('location', self.location_callback)
+        self.vehicle.add_attribute_listener('mode', self.mode_callback)
     
     def connect(self):
         print 'Connecting to vehicle on: %s' % self.address
-        self.vehicle = connect(self.address, wait_ready=True, baud=57600)
+        self.vehicle = connect(self.address, wait_ready=True, baud=57600)#, heartbeat_timeout=10)
+        print 'Connection established'
 
     def clear_mission(self):
         self.cmds.clear()
@@ -46,11 +50,11 @@ class Drone():
         # Land
         self.cmds.add(command_land())
         # Release package
-        # self.cmds.add(command_unlock())
+        self.cmds.add(command_unlock())
         # Takeoff
         self.cmds.add(command_takeoff(self.cruise_altitude))
         # Undo release
-        # self.cmds.add(command_lock())
+        self.cmds.add(command_lock())
         # MAV_CMD_NAV_RETURN_TO_LAUNCH
         self.cmds.add(command_rtl(self.cruise_altitude))
         # Dummy
@@ -112,6 +116,7 @@ class Drone():
         self.vehicle.simple_goto(waypoint)
 
     def run(self):
+        self.show_battery()
         print "Clearing mission"
         self.clear_mission()
         print "Preparing mission"
@@ -123,12 +128,36 @@ class Drone():
         self.arm()
         self.takeoff()
         self.begin_mission()
+        self.wait()
+
+        self.vehicle.close()
 
     def wait(self):
-        while self.cmds.next != self.cmds.count:
+        # while self.cmds.next != self.cmds.count:
+        while not self.mission_ended():
+            print "%s / %s" % (self.cmds.next, self.cmds.count), 
+            print "distance %s" % self.distance_to_current_waypoint()
             time.sleep(0.5)
 
         print "*******ended"
+
+    def mission_ended(self):
+        if self.cmds.next > 1:
+            self.mission_ended_aux = True
+            return False
+        elif self.cmds.next == 1 and self.mission_ended_aux:
+            self.mission_ended_aux = False
+            return True
+        elif self.cmds.next == 1 and not self.mission_ended_aux:
+            return False
+
+    def show_battery(self):
+        print "##########################################"
+        print "# Battery information:"
+        print "# voltage: %s" % self.vehicle.battery.voltage
+        print "# current: %s" % self.vehicle.battery.current
+        print "# level: %s" % self.vehicle.battery.level
+        print "##########################################"
 
     def get_location(self):
         return [self.current_location.lat, self.current_location.lon]
@@ -138,6 +167,9 @@ class Drone():
             self.altitude = location.global_relative_frame.alt
 
         self.current_location = location.global_relative_frame
+
+    def mode_callback(self, vehicle, name, mode):
+        print "## mode changed: %s" % mode.name
 
 def command_takeoff(alt):
     return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, alt)
@@ -152,10 +184,10 @@ def command_rtl(alt):
     return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0, 0, 0, 0, 0, 0, alt)
 
 def command_lock():
-    return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 0, 0, 0, 0, 0, 0, 0, self.cruise_altitude)
+    return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_SET_RELAY, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
 def command_unlock():
-    return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0, 0, 0, 0, 0, 0, 0, 0, self.cruise_altitude)
+    return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_SET_RELAY, 0, 0, 0, 1, 0, 0, 0, 0, 0)
 
 def command_dummy():
     return dronekit.Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0, 0, 0, 0, 0, 0, 0)
